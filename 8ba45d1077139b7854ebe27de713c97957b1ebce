@@ -1,0 +1,39 @@
+.github/workflows/firebase-deploy.yml
+  65c075554ee5210c 1-28
+.gitignore
+  65c075554ee5210c 1-6
+index.html
+  65c075554ee5210c 1-150
+firebase.json
+  65c075554ee5210c 1-16
+vite.config.js
+  65c075554ee5210c 1-11
+package.json
+  65c075554ee5210c 1-17
+.firebaserc
+  65c075554ee5210c 1-5
+src/main.js
+  65c075554ee5210c 1-425
+.npmrc
+  65c075554ee5210c 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "8ba45d1077139b7854ebe27de713c97957b1ebce",
+  "prompts": {
+    "65c075554ee5210c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d650e36e-b6a0-4bb6-8d73-101f8afc6fc5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Amir Barkal <bark100@gmail.com>",
+      "messages": [],
+      "total_additions": 720,
+      "total_deletions": 61,
+      "accepted_lines": 659,
+      "overriden_lines": 0
+    }
+  }
+}
