@@ -1,0 +1,25 @@
+.gitignore
+  65c075554ee5210c 7
+src/main.js
+  65c075554ee5210c 19-98,116-118,120,123-128,134-149,163-246,250-317,369,401-411,413,485,499-505,511-513,515,555-556,617-619,675
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "2.0.0",
+  "base_commit_sha": "5414866bf90403e9c98904a98a2e2d96e5a0fd2d",
+  "prompts": {
+    "65c075554ee5210c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d650e36e-b6a0-4bb6-8d73-101f8afc6fc5",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Amir Barkal <bark100@gmail.com>",
+      "messages": [],
+      "total_additions": 322,
+      "total_deletions": 56,
+      "accepted_lines": 295,
+      "overriden_lines": 0
+    }
+  }
+}
