@@ -16,6 +16,86 @@ const OBSTACLE_MAX_GAP = 1600;
 
 const JUMP_EVENT = 'player-jump';
 
+// Playable characters. `unlock` is the best-score needed to use them.
+// srcW/srcH are the cropped source-image dimensions used for scaling + hitbox.
+const CHARACTERS = [
+  { key: 'sonic',   label: 'סוניק', asset: '/assets/sonic.png',                srcW: 1015, srcH: 1002, unlock: 0,    bodyWFrac: 0.5,  bodyHFrac: 0.85 },
+  { key: 'patrick', label: 'פטריק', asset: '/assets/patrick.png',              srcW: 742,  srcH: 838,  unlock: 2001, bodyWFrac: 0.55, bodyHFrac: 0.85 },
+  { key: 'mario',   label: 'מריו',  asset: '/assets/mario_running_ssbwiu.png', srcW: 941,  srcH: 850,  unlock: 5001, bodyWFrac: 0.5,  bodyHFrac: 0.85 },
+];
+
+const STORAGE_BEST = 'dadOri.bestScore';
+const STORAGE_CHAR = 'dadOri.character';
+
+function getBestScore() {
+  return parseInt(localStorage.getItem(STORAGE_BEST) || '0', 10) || 0;
+}
+function setBestScore(value) {
+  localStorage.setItem(STORAGE_BEST, String(Math.floor(value)));
+}
+function getSelectedCharacter() {
+  const key = localStorage.getItem(STORAGE_CHAR);
+  return CHARACTERS.find((c) => c.key === key) ? key : 'sonic';
+}
+function setSelectedCharacter(key) {
+  localStorage.setItem(STORAGE_CHAR, key);
+}
+function isUnlocked(character, bestScore) {
+  return bestScore >= character.unlock;
+}
+
+// Quiz difficulty levels. `example` is shown on the picker screen.
+const DIFFICULTIES = [
+  { key: 'easy',   label: 'קל',   example: '3 ועוד 5' },
+  { key: 'normal', label: 'רגיל', example: '4 כפול 2' },
+  { key: 'hard',   label: 'קשה',  example: '4995 ועוד 9089' },
+];
+
+const STORAGE_DIFF = 'dadOri.difficulty';
+
+function getDifficulty() {
+  const key = localStorage.getItem(STORAGE_DIFF);
+  return DIFFICULTIES.find((d) => d.key === key) ? key : 'normal';
+}
+function setDifficulty(key) {
+  localStorage.setItem(STORAGE_DIFF, key);
+}
+
+// Build a question for the given difficulty: { text, answer }.
+function generateQuestion(difficultyKey) {
+  if (difficultyKey === 'easy') {
+    const a = Phaser.Math.Between(1, 9);
+    const b = Phaser.Math.Between(1, 9);
+    return { text: `כמה זה ${a} ועוד ${b}?`, answer: a + b };
+  }
+  if (difficultyKey === 'hard') {
+    const a = Phaser.Math.Between(1000, 9999);
+    const b = Phaser.Math.Between(1000, 9999);
+    return { text: `כמה זה ${a} ועוד ${b}?`, answer: a + b };
+  }
+  // normal — multiplication of small numbers
+  const a = Phaser.Math.Between(2, 9);
+  const b = Phaser.Math.Between(2, 9);
+  return { text: `כמה זה ${a} כפול ${b}?`, answer: a * b };
+}
+
+// Loads all character images once before any scene that draws them.
+class PreloadScene extends Phaser.Scene {
+  constructor() {
+    super('PreloadScene');
+  }
+
+  preload() {
+    for (const c of CHARACTERS) {
+      this.load.image(c.key, c.asset);
+    }
+  }
+
+  create() {
+    this.scene.start('MenuScene');
+  }
+}
+
 class MenuScene extends Phaser.Scene {
   constructor() {
     super('MenuScene');
@@ -25,7 +105,7 @@ class MenuScene extends Phaser.Scene {
     // On the menu there is no jumping — hide the on-screen jump button + hint.
     setControlsVisible(false);
 
-    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 - 90, 'משחק הקפיצות של אבא ואורי', {
+    this.add.text(GAME_WIDTH / 2, 90, 'משחק הקפיצות של אבא ואורי', {
       fontSize: '40px',
       fontFamily: 'sans-serif',
       fontStyle: 'bold',
@@ -33,25 +113,40 @@ class MenuScene extends Phaser.Scene {
       align: 'center',
     }).setOrigin(0.5);
 
-    // Start button: rounded rectangle + label
-    const btnW = 220;
-    const btnH = 70;
-    const btnY = GAME_HEIGHT / 2 + 30;
-    const button = this.add.rectangle(GAME_WIDTH / 2, btnY, btnW, btnH, 0xff6b35)
-      .setStrokeStyle(4, 0xc44a1a)
+    // Best score so far (drives character unlocks).
+    this.add.text(GAME_WIDTH / 2, 150, `שיא: ${getBestScore()}`, {
+      fontSize: '24px',
+      fontFamily: 'sans-serif',
+      color: '#1a1a2e',
+    }).setOrigin(0.5);
+
+    this.makeButton(GAME_WIDTH / 2, 220, 'התחל', 0xff6b35, 0xc44a1a, () => this.startGame());
+    this.makeButton(GAME_WIDTH / 2, 300, 'דמויות', 0x1a1a2e, 0x0d0d18, () =>
+      this.scene.start('CharacterScene')
+    );
+    this.makeButton(GAME_WIDTH / 2, 380, 'רמת קושי', 0x1a1a2e, 0x0d0d18, () =>
+      this.scene.start('DifficultyScene')
+    );
+
+    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+  }
+
+  makeButton(x, y, text, fill, stroke, onClick) {
+    const button = this.add.rectangle(x, y, 240, 64, fill)
+      .setStrokeStyle(4, stroke)
       .setInteractive({ useHandCursor: true });
-    const label = this.add.text(GAME_WIDTH / 2, btnY, 'התחל', {
-      fontSize: '34px',
+    this.add.text(x, y, text, {
+      fontSize: '30px',
       fontFamily: 'sans-serif',
       fontStyle: 'bold',
       color: '#ffffff',
     }).setOrigin(0.5);
-
-    button.on('pointerover', () => button.setFillStyle(0xff8255));
-    button.on('pointerout', () => button.setFillStyle(0xff6b35));
-    button.on('pointerdown', () => this.startGame());
-
-    this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    const base = fill;
+    const hover = Phaser.Display.Color.IntegerToColor(fill).brighten(20).color;
+    button.on('pointerover', () => button.setFillStyle(hover));
+    button.on('pointerout', () => button.setFillStyle(base));
+    button.on('pointerdown', onClick);
+    return button;
   }
 
   startGame() {
@@ -62,6 +157,161 @@ class MenuScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
       this.startGame();
     }
+  }
+}
+
+// Character picker. Unlocked characters are selectable; locked ones show a
+// lock icon and the score needed to unlock them.
+class CharacterScene extends Phaser.Scene {
+  constructor() {
+    super('CharacterScene');
+  }
+
+  create() {
+    setControlsVisible(false);
+    const best = getBestScore();
+    const selected = getSelectedCharacter();
+
+    this.add.text(GAME_WIDTH / 2, 50, 'בחר דמות', {
+      fontSize: '36px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#1a1a2e',
+    }).setOrigin(0.5);
+
+    this.add.text(GAME_WIDTH / 2, 92, `שיא: ${best}`, {
+      fontSize: '20px',
+      fontFamily: 'sans-serif',
+      color: '#1a1a2e',
+    }).setOrigin(0.5);
+
+    const slotW = GAME_WIDTH / CHARACTERS.length;
+    const cardY = 240;
+
+    CHARACTERS.forEach((c, i) => {
+      const cx = slotW * i + slotW / 2;
+      const unlocked = isUnlocked(c, best);
+
+      const card = this.add.rectangle(cx, cardY, slotW - 30, 230, 0xffffff, 0.9)
+        .setStrokeStyle(4, c.key === selected ? 0xff6b35 : 0xcccccc);
+
+      // Character preview, scaled to fit the card.
+      const preview = this.add.image(cx, cardY - 20, c.key);
+      const maxDim = 120;
+      const scale = Math.min(maxDim / c.srcW, maxDim / c.srcH);
+      preview.setScale(scale);
+      if (!unlocked) preview.setTint(0x000000).setAlpha(0.45);
+
+      this.add.text(cx, cardY + 70, c.label, {
+        fontSize: '24px',
+        fontFamily: 'sans-serif',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+      }).setOrigin(0.5);
+
+      if (unlocked) {
+        if (c.key === selected) {
+          this.add.text(cx, cardY + 100, '✓ נבחר', {
+            fontSize: '18px',
+            fontFamily: 'sans-serif',
+            color: '#2d7a2d',
+          }).setOrigin(0.5);
+        }
+        card.setInteractive({ useHandCursor: true });
+        card.on('pointerdown', () => {
+          setSelectedCharacter(c.key);
+          this.scene.restart();
+        });
+      } else {
+        // Lock icon + required score.
+        this.add.text(cx, cardY - 20, '🔒', { fontSize: '48px' }).setOrigin(0.5);
+        this.add.text(cx, cardY + 100, `🔒 ${c.unlock} נק'`, {
+          fontSize: '18px',
+          fontFamily: 'sans-serif',
+          color: '#cc2222',
+        }).setOrigin(0.5);
+      }
+    });
+
+    // Back button.
+    const back = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 50, 200, 56, 0x1a1a2e)
+      .setStrokeStyle(4, 0x0d0d18)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 50, 'חזרה', {
+      fontSize: '26px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+    back.on('pointerdown', () => this.scene.start('MenuScene'));
+  }
+}
+
+// Quiz difficulty picker.
+class DifficultyScene extends Phaser.Scene {
+  constructor() {
+    super('DifficultyScene');
+  }
+
+  create() {
+    setControlsVisible(false);
+    const selected = getDifficulty();
+
+    this.add.text(GAME_WIDTH / 2, 60, 'רמת קושי של השאלות', {
+      fontSize: '34px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#1a1a2e',
+    }).setOrigin(0.5);
+
+    const startY = 140;
+    const rowH = 86;
+
+    DIFFICULTIES.forEach((d, i) => {
+      const y = startY + i * rowH;
+      const isSel = d.key === selected;
+
+      const card = this.add.rectangle(GAME_WIDTH / 2, y, 460, 72, 0xffffff, 0.95)
+        .setStrokeStyle(4, isSel ? 0xff6b35 : 0xcccccc)
+        .setInteractive({ useHandCursor: true });
+
+      this.add.text(GAME_WIDTH / 2 - 200, y, d.label, {
+        fontSize: '28px',
+        fontFamily: 'sans-serif',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+      }).setOrigin(0, 0.5);
+
+      this.add.text(GAME_WIDTH / 2 + 200, y, `${d.example} = ?`, {
+        fontSize: '22px',
+        fontFamily: 'monospace',
+        color: '#666666',
+      }).setOrigin(1, 0.5);
+
+      if (isSel) {
+        this.add.text(GAME_WIDTH / 2 - 120, y, '✓', {
+          fontSize: '26px',
+          fontFamily: 'sans-serif',
+          color: '#2d7a2d',
+        }).setOrigin(0.5);
+      }
+
+      card.on('pointerdown', () => {
+        setDifficulty(d.key);
+        this.scene.restart();
+      });
+    });
+
+    const back = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 45, 200, 52, 0x1a1a2e)
+      .setStrokeStyle(4, 0x0d0d18)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 45, 'חזרה', {
+      fontSize: '26px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+    back.on('pointerdown', () => this.scene.start('MenuScene'));
   }
 }
 
@@ -94,8 +344,6 @@ class GameScene extends Phaser.Scene {
     c.generateTexture('cloud', 90, 44);
     c.destroy();
 
-    this.load.image('sonic', '/assets/sonic.png');
-
     // Cactus texture: tall stem + two side arms
     const cac = this.make.graphics({ x: 0, y: 0, add: false });
     cac.fillStyle(0x2d7a2d);
@@ -118,6 +366,7 @@ class GameScene extends Phaser.Scene {
     this.gameOver = false;
     this.quizActive = false;
     this.score = 0;
+    this.bestScore = getBestScore();
     this.nextObstacleX = GAME_WIDTH + Phaser.Math.Between(400, 800);
 
     this.clouds = [];
@@ -149,14 +398,19 @@ class GameScene extends Phaser.Scene {
 
     this.obstacles = this.physics.add.group();
 
-    // Scale sonic image (1900x1140) down to PLAYER_HEIGHT
-    const sonicScale = PLAYER_HEIGHT / 1140;
-    this.player = this.physics.add.sprite(PLAYER_X, GROUND_TOP - PLAYER_HEIGHT / 2, 'sonic');
-    this.player.setScale(sonicScale);
-    // Tighter physics body for fair hit detection
-    this.player.body.setSize(PLAYER_WIDTH, PLAYER_HEIGHT);
+    // Use the player's chosen character; scale it down to PLAYER_HEIGHT.
+    const character = CHARACTERS.find((c) => c.key === getSelectedCharacter());
+    const playerScale = PLAYER_HEIGHT / character.srcH;
+    this.player = this.physics.add.sprite(PLAYER_X, GROUND_TOP - PLAYER_HEIGHT / 2, character.key);
+    this.player.setScale(playerScale);
+    // Hitbox: central body only (arms/legs reach out in the run pose),
+    // bottom flush with the feet so they rest on the ground. Source pixels.
+    const bodyW = character.srcW * character.bodyWFrac;
+    const bodyH = character.srcH * character.bodyHFrac;
+    this.player.body.setSize(bodyW, bodyH);
+    this.player.body.setOffset((character.srcW - bodyW) / 2, character.srcH - bodyH);
     this.player.body.setCollideWorldBounds(true);
-    this.baseScale = sonicScale;
+    this.baseScale = playerScale;
 
     this.physics.add.collider(this.player, groundBody);
 
@@ -228,6 +482,7 @@ class GameScene extends Phaser.Scene {
     this.quizForm.addEventListener('submit', this.quizSubmitHandler);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.persistBest();
       document.removeEventListener(JUMP_EVENT, this.jumpHandler);
       this.quizForm.removeEventListener('submit', this.quizSubmitHandler);
       this.quizModal.classList.remove('show');
@@ -241,17 +496,23 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  // Save the best score reached if it beats what's stored (drives unlocks).
+  persistBest() {
+    if (this.bestScore > getBestScore()) {
+      setBestScore(this.bestScore);
+    }
+  }
+
   showQuiz(obstacle) {
     this.quizActive = true;
     this.hitObstacle = obstacle;
     this.physics.pause();
 
-    // Simple multiplication quiz with small numbers.
-    const a = Phaser.Math.Between(2, 9);
-    const b = Phaser.Math.Between(2, 9);
-    this.quizCorrectAnswer = a * b;
+    // Question depends on the chosen difficulty level.
+    const question = generateQuestion(getDifficulty());
+    this.quizCorrectAnswer = question.answer;
 
-    this.quizQuestion.textContent = `כמה זה ${a} כפול ${b}?`;
+    this.quizQuestion.textContent = question.text;
     this.quizFeedback.textContent = '';
     this.quizAnswer.value = '';
     this.quizModal.classList.add('show');
@@ -291,7 +552,8 @@ class GameScene extends Phaser.Scene {
       }
       this.hitObstacle = null;
     } else {
-      // Start over from the top.
+      // Start over from the top — but bank the best score first (for unlocks).
+      this.persistBest();
       this.restartGame();
     }
   }
@@ -352,6 +614,9 @@ class GameScene extends Phaser.Scene {
 
     this.score += SCROLL_SPEED * deltaSec / 10;
     this.scoreText.setText(`Score: ${Math.floor(this.score)}`);
+    if (Math.floor(this.score) > this.bestScore) {
+      this.bestScore = Math.floor(this.score);
+    }
 
     // Running animation: ONLY a lean rock. No scale change, no manual y —
     // anything touching y/scale read as jumping or fought the physics.
@@ -407,7 +672,7 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
   },
-  scene: [MenuScene, GameScene],
+  scene: [PreloadScene, MenuScene, CharacterScene, DifficultyScene, GameScene],
 };
 
 new Phaser.Game(config);
