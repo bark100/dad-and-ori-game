@@ -384,19 +384,32 @@ class GameScene extends Phaser.Scene {
     cityFront.generateTexture('city-front', 480, 190);
     cityFront.destroy();
 
-    // Cactus texture: tall stem + two side arms
-    const cac = this.make.graphics({ x: 0, y: 0, add: false });
-    cac.fillStyle(0x2d7a2d);
-    // stem
-    cac.fillRect(16, 0, 18, 72);
-    // left arm
-    cac.fillRect(0, 18, 16, 12);
-    cac.fillRect(0, 6, 12, 12);
-    // right arm
-    cac.fillRect(34, 24, 16, 12);
-    cac.fillRect(38, 12, 12, 12);
-    cac.generateTexture('cactus', 50, 72);
-    cac.destroy();
+    // Traffic light texture: hanging signal head on a roadside pole.
+    const light = this.make.graphics({ x: 0, y: 0, add: false });
+    // pole and base
+    light.fillStyle(0x4b5563);
+    light.fillRect(23, 34, 6, 46);
+    light.fillStyle(0x374151);
+    light.fillRect(16, 78, 20, 6);
+    // signal housing
+    light.fillStyle(0x111827);
+    light.fillRoundedRect(10, 0, 42, 54, 8);
+    light.fillStyle(0x1f2937);
+    light.fillRoundedRect(14, 4, 34, 46, 6);
+    // signal lights
+    light.fillStyle(0xff2d2d);
+    light.fillCircle(31, 13, 8);
+    light.fillStyle(0xffd23f);
+    light.fillCircle(31, 27, 8);
+    light.fillStyle(0x32d96b);
+    light.fillCircle(31, 41, 8);
+    // glossy highlights
+    light.fillStyle(0xffffff, 0.45);
+    light.fillCircle(28, 10, 2);
+    light.fillCircle(28, 24, 2);
+    light.fillCircle(28, 38, 2);
+    light.generateTexture('traffic-light', 62, 84);
+    light.destroy();
   }
 
   create() {
@@ -601,7 +614,7 @@ class GameScene extends Phaser.Scene {
     this.physics.resume();
 
     if (correct) {
-      // Another turn: clear the cactus he hit and keep running with his score.
+      // Another turn: clear the traffic light he hit and keep running with his score.
       if (this.hitObstacle && this.hitObstacle.active) {
         this.hitObstacle.destroy();
       }
@@ -614,11 +627,11 @@ class GameScene extends Phaser.Scene {
   }
 
   spawnObstacle() {
-    const cactusH = 72;
+    const trafficLightH = 84;
     const obs = this.obstacles.create(
       GAME_WIDTH + 50,
-      GROUND_TOP - cactusH / 2,
-      'cactus'
+      GROUND_TOP - trafficLightH / 2,
+      'traffic-light'
     );
     obs.body.setAllowGravity(false);
     obs.body.setImmovable(true);
