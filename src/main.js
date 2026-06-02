@@ -11,6 +11,8 @@ const JUMP_VELOCITY = -650;
 const GRAVITY = 1600;
 const SCROLL_SPEED = 480;
 const CLOUD_SPEED = 100;
+const CITY_BACK_SPEED = 65;
+const CITY_FRONT_SPEED = 130;
 const OBSTACLE_MIN_GAP = 900;
 const OBSTACLE_MAX_GAP = 1600;
 
@@ -105,7 +107,7 @@ class MenuScene extends Phaser.Scene {
     // On the menu there is no jumping — hide the on-screen jump button + hint.
     setControlsVisible(false);
 
-    this.add.text(GAME_WIDTH / 2, 90, 'משחק הקפיצות של אבא ואורי', {
+    this.add.text(GAME_WIDTH / 2, 90, 'הרץ החכם', {
       fontSize: '40px',
       fontFamily: 'sans-serif',
       fontStyle: 'bold',
@@ -344,6 +346,44 @@ class GameScene extends Phaser.Scene {
     c.generateTexture('cloud', 90, 44);
     c.destroy();
 
+    const cityBack = this.make.graphics({ x: 0, y: 0, add: false });
+    cityBack.fillStyle(0x47657d);
+    [
+      [0, 62, 54, 88],
+      [56, 34, 70, 116],
+      [130, 54, 58, 96],
+      [192, 24, 76, 126],
+      [272, 48, 50, 102],
+      [326, 72, 74, 78],
+    ].forEach(([x, y, w, h]) => cityBack.fillRect(x, y, w, h));
+    cityBack.fillStyle(0xfff2a8, 0.55);
+    for (let x = 12; x < 390; x += 28) {
+      for (let y = 48; y < 138; y += 24) {
+        if ((x + y) % 3 !== 0) cityBack.fillRect(x, y, 8, 10);
+      }
+    }
+    cityBack.generateTexture('city-back', 400, 150);
+    cityBack.destroy();
+
+    const cityFront = this.make.graphics({ x: 0, y: 0, add: false });
+    cityFront.fillStyle(0x23364d);
+    [
+      [0, 78, 62, 112],
+      [66, 36, 92, 154],
+      [162, 88, 54, 102],
+      [222, 18, 84, 172],
+      [312, 64, 76, 126],
+      [392, 42, 88, 148],
+    ].forEach(([x, y, w, h]) => cityFront.fillRect(x, y, w, h));
+    cityFront.fillStyle(0xffd36e, 0.85);
+    for (let x = 14; x < 468; x += 26) {
+      for (let y = 48; y < 174; y += 26) {
+        if ((x * y) % 5 !== 0) cityFront.fillRect(x, y, 9, 12);
+      }
+    }
+    cityFront.generateTexture('city-front', 480, 190);
+    cityFront.destroy();
+
     // Cactus texture: tall stem + two side arms
     const cac = this.make.graphics({ x: 0, y: 0, add: false });
     cac.fillStyle(0x2d7a2d);
@@ -368,6 +408,21 @@ class GameScene extends Phaser.Scene {
     this.score = 0;
     this.bestScore = getBestScore();
     this.nextObstacleX = GAME_WIDTH + Phaser.Math.Between(400, 800);
+
+    this.cityBack = this.add.tileSprite(
+      GAME_WIDTH / 2,
+      GROUND_TOP - 150 / 2,
+      GAME_WIDTH,
+      150,
+      'city-back'
+    );
+    this.cityFront = this.add.tileSprite(
+      GAME_WIDTH / 2,
+      GROUND_TOP - 190 / 2,
+      GAME_WIDTH,
+      190,
+      'city-front'
+    );
 
     this.clouds = [];
     for (let i = 0; i < 4; i++) {
@@ -633,6 +688,8 @@ class GameScene extends Phaser.Scene {
     }
 
     this.ground.tilePositionX += SCROLL_SPEED * deltaSec;
+    this.cityBack.tilePositionX += CITY_BACK_SPEED * deltaSec;
+    this.cityFront.tilePositionX += CITY_FRONT_SPEED * deltaSec;
 
     for (const cloud of this.clouds) {
       cloud.x -= CLOUD_SPEED * deltaSec;
