@@ -395,39 +395,45 @@ class GameScene extends Phaser.Scene {
 
     const cityBack = this.make.graphics({ x: 0, y: 0, add: false });
     cityBack.fillStyle(0x47657d);
-    [
+    const cityBackBuildings = [
       [0, 62, 54, 88],
       [56, 34, 70, 116],
       [130, 54, 58, 96],
       [192, 24, 76, 126],
       [272, 48, 50, 102],
       [326, 72, 74, 78],
-    ].forEach(([x, y, w, h]) => cityBack.fillRect(x, y, w, h));
+    ];
+    cityBackBuildings.forEach(([x, y, w, h]) => cityBack.fillRect(x, y, w, h));
     cityBack.fillStyle(0xfff2a8, 0.55);
-    for (let x = 12; x < 390; x += 28) {
-      for (let y = 48; y < 138; y += 24) {
-        if ((x + y) % 3 !== 0) cityBack.fillRect(x, y, 8, 10);
+    cityBackBuildings.forEach(([buildingX, buildingY, buildingW, buildingH], buildingIndex) => {
+      for (let x = buildingX + 12; x <= buildingX + buildingW - 16; x += 22) {
+        for (let y = buildingY + 14; y <= buildingY + buildingH - 18; y += 24) {
+          if ((x + y + buildingIndex) % 3 !== 0) cityBack.fillRect(x, y, 8, 10);
+        }
       }
-    }
+    });
     cityBack.generateTexture('city-back', 400, 150);
     cityBack.destroy();
 
     const cityFront = this.make.graphics({ x: 0, y: 0, add: false });
     cityFront.fillStyle(0x23364d);
-    [
+    const cityFrontBuildings = [
       [0, 78, 62, 112],
       [66, 36, 92, 154],
       [162, 88, 54, 102],
       [222, 18, 84, 172],
       [312, 64, 76, 126],
       [392, 42, 88, 148],
-    ].forEach(([x, y, w, h]) => cityFront.fillRect(x, y, w, h));
+    ];
+    cityFrontBuildings.forEach(([x, y, w, h]) => cityFront.fillRect(x, y, w, h));
     cityFront.fillStyle(0xffd36e, 0.85);
-    for (let x = 14; x < 468; x += 26) {
-      for (let y = 48; y < 174; y += 26) {
-        if ((x * y) % 5 !== 0) cityFront.fillRect(x, y, 9, 12);
+    cityFrontBuildings.forEach(([buildingX, buildingY, buildingW, buildingH], buildingIndex) => {
+      for (let x = buildingX + 14; x <= buildingX + buildingW - 18; x += 24) {
+        for (let y = buildingY + 16; y <= buildingY + buildingH - 20; y += 26) {
+          if ((x * y + buildingIndex) % 5 !== 0) cityFront.fillRect(x, y, 9, 12);
+        }
       }
-    }
+    });
     cityFront.generateTexture('city-front', 480, 190);
     cityFront.destroy();
 
