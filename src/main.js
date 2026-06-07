@@ -565,7 +565,7 @@ class GameScene extends Phaser.Scene {
       fontStyle: 'bold',
       color: '#ff6b35',
     }).setOrigin(0.5).setVisible(false);
-    this.restartText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'לחץ על כפתור הרווח או קפיצה כדי להפעיל מחדש', {
+    this.restartText = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2 + 30, 'לחץ על רווח, גע במסך או לחץ קפיצה כדי להפעיל מחדש', {
       fontSize: '20px',
       fontFamily: 'monospace',
       color: '#ffffff',
@@ -573,13 +573,14 @@ class GameScene extends Phaser.Scene {
 
     this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
+    this.touchJumpHandler = (_pointer, currentlyOver = []) => {
+      if (currentlyOver.includes(menuBtn)) return;
+      this.handleJumpInput();
+    };
+    this.input.on('pointerdown', this.touchJumpHandler);
+
     this.jumpHandler = () => {
-      if (this.quizActive) return;
-      if (this.gameOver) {
-        this.restartGame();
-      } else {
-        this.tryJump();
-      }
+      this.handleJumpInput();
     };
     document.addEventListener(JUMP_EVENT, this.jumpHandler);
 
@@ -598,10 +599,20 @@ class GameScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.persistBest();
+      this.input.off('pointerdown', this.touchJumpHandler);
       document.removeEventListener(JUMP_EVENT, this.jumpHandler);
       this.quizForm.removeEventListener('submit', this.quizSubmitHandler);
       this.quizModal.classList.remove('show');
     });
+  }
+
+  handleJumpInput() {
+    if (this.quizActive) return;
+    if (this.gameOver) {
+      this.restartGame();
+    } else {
+      this.tryJump();
+    }
   }
 
   tryJump() {

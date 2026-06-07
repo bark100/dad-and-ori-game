@@ -38,6 +38,9 @@
         box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
         line-height: 0;
       }
+      #game-container canvas {
+        touch-action: manipulation;
+      }
       #jump-button {
         padding: 1rem 3rem;
         font-size: 1.5rem;
@@ -129,7 +132,7 @@
     <h1 dir="rtl">הרץ החכם</h1>
     <div id="game-container"></div>
     <button id="jump-button" type="button">קפיצה</button>
-    <p class="hint" dir="rtl">לחץ על רווח או על קפיצה</p>
+    <p class="hint" dir="rtl">לחץ על רווח, גע במסך או על קפיצה</p>
 
     <div id="quiz-modal">
       <form class="quiz-box" id="quiz-form" dir="rtl">
