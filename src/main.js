@@ -17,6 +17,48 @@ const OBSTACLE_MIN_GAP = 900;
 const OBSTACLE_MAX_GAP = 1600;
 
 const JUMP_EVENT = 'player-jump';
+const BEEP_FREQUENCY = 880;
+const BEEP_DURATION = 0.12;
+const BEEP_VOLUME = 0.16;
+
+let audioContext = null;
+
+function getAudioContext() {
+  if (typeof window === 'undefined') return null;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return null;
+
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+
+  return audioContext;
+}
+
+function playBuildingTouchBeep() {
+  const context = getAudioContext();
+  if (!context) return;
+
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  const startTime = context.currentTime;
+  const endTime = startTime + BEEP_DURATION;
+
+  oscillator.type = 'square';
+  oscillator.frequency.setValueAtTime(BEEP_FREQUENCY, startTime);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(BEEP_VOLUME, startTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.001, endTime);
+
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start(startTime);
+  oscillator.stop(endTime);
+}
 
 // Playable characters. `unlock` is the best-score needed to use them.
 // srcW/srcH are the cropped source-image dimensions used for scaling + hitbox.
@@ -147,16 +189,21 @@ class MenuScene extends Phaser.Scene {
     const hover = Phaser.Display.Color.IntegerToColor(fill).brighten(20).color;
     button.on('pointerover', () => button.setFillStyle(hover));
     button.on('pointerout', () => button.setFillStyle(base));
-    button.on('pointerdown', onClick);
+    button.on('pointerdown', () => {
+      getAudioContext();
+      onClick();
+    });
     return button;
   }
 
   startGame() {
+    getAudioContext();
     this.scene.start('GameScene');
   }
 
   update() {
     if (Phaser.Input.Keyboard.JustDown(this.spaceKey)) {
+      getAudioContext();
       this.startGame();
     }
   }
@@ -572,6 +619,7 @@ class GameScene extends Phaser.Scene {
   }
 
   showQuiz(obstacle) {
+    playBuildingTouchBeep();
     this.quizActive = true;
     this.hitObstacle = obstacle;
     this.physics.pause();
@@ -749,7 +797,10 @@ new Phaser.Game(config);
 
 const jumpButton = document.getElementById('jump-button');
 const hint = document.querySelector('.hint');
-const dispatchJump = () => document.dispatchEvent(new CustomEvent(JUMP_EVENT));
+const dispatchJump = () => {
+  getAudioContext();
+  document.dispatchEvent(new CustomEvent(JUMP_EVENT));
+};
 jumpButton.addEventListener('click', dispatchJump);
 
 // Show/hide the on-screen jump controls depending on the active scene.
