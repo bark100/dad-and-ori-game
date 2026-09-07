@@ -163,6 +163,24 @@ function getCharactersByType(typeKey) {
   return CHARACTERS.filter((character) => character.type === typeKey);
 }
 
+function drawStar(graphics, cx, cy, points, innerRadius, outerRadius) {
+  const step = Math.PI / points;
+  graphics.beginPath();
+  for (let i = 0; i < 2 * points; i++) {
+    const r = i % 2 === 0 ? outerRadius : innerRadius;
+    const angle = i * step - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r;
+    const y = cy + Math.sin(angle) * r;
+    if (i === 0) {
+      graphics.moveTo(x, y);
+    } else {
+      graphics.lineTo(x, y);
+    }
+  }
+  graphics.closePath();
+  graphics.fillPath();
+}
+
 function createFunnyCharacterTexture(scene, character) {
   const g = scene.make.graphics({ x: 0, y: 0, add: false });
   const { color, accent } = character;
@@ -223,7 +241,7 @@ function createFunnyCharacterTexture(scene, character) {
   g.fillStyle(0xffffff, 0.85);
   g.fillCircle(60, 87, 18);
   g.fillStyle(accent);
-  g.fillStar(60, 87, 5, 7, 15);
+  drawStar(g, 60, 87, 5, 7, 15);
 
   g.generateTexture(character.key, character.srcW, character.srcH);
   g.destroy();
