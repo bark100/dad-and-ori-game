@@ -247,39 +247,279 @@ function createFunnyCharacterTexture(scene, character) {
   g.destroy();
 }
 
-// Quiz difficulty levels. `example` is shown on the picker screen.
-const DIFFICULTIES = [
+// Available subject categories for quiz questions
+const SUBJECTS = [
+  { key: 'language', label: 'שאלות בשפה', description: 'השלמת מילים במשפטים' },
+  { key: 'math',     label: 'שאלות בחשבון', description: 'חיבור, כפל ותרגילים' },
+];
+
+// Quiz difficulty levels for math
+const MATH_DIFFICULTIES = [
   { key: 'easy',   label: 'קל',   example: '3 ועוד 5' },
   { key: 'normal', label: 'רגיל', example: '4 כפול 2' },
   { key: 'hard',   label: 'קשה',  example: '4995 ועוד 9089' },
 ];
 
-const STORAGE_DIFF = 'dadOri.difficulty';
+// Quiz difficulty levels for language questions
+const LANGUAGE_DIFFICULTIES = [
+  { key: 'easy',   label: 'קל',   example: 'השלמת מילה במשפט', enabled: true },
+  { key: 'normal', label: 'בינוני', example: 'בקרוב...', enabled: false },
+  { key: 'hard',   label: 'קשה',  example: 'בקרוב...', enabled: false },
+];
 
-function getDifficulty() {
-  const key = localStorage.getItem(STORAGE_DIFF);
-  return DIFFICULTIES.find((d) => d.key === key) ? key : 'normal';
-}
-function setDifficulty(key) {
-  localStorage.setItem(STORAGE_DIFF, key);
+// Easy language question bank (with multiple accepted answers)
+const EASY_LANGUAGE_QUESTIONS = [
+  {
+    text: 'עידן הלך לקנות ______ בחנות כדי שיהיה לנו מה לקרוא',
+    answers: ['ספר', 'ספרים', 'עיתון', 'עיתונים', 'חוברת', 'חוברות', 'קומיקס', 'מגזין'],
+    displayAnswer: 'ספר',
+  },
+  {
+    text: 'בבוקר מצחצחים שיניים בעזרת מברשת ו______ שיניים',
+    answers: ['משחה', 'משחת', 'מישחה', 'משחת שיניים'],
+    displayAnswer: 'משחת',
+  },
+  {
+    text: 'בחורף יורד גשם ולכן פותחים ______ כדי לא להירטב',
+    answers: ['מטריה', 'מטרייה', 'מעיל'],
+    displayAnswer: 'מטריה',
+  },
+  {
+    text: 'הדבורה עפה מפרח לפרח ומכינה ______ מתוק',
+    answers: ['דבש', 'הדבש'],
+    displayAnswer: 'דבש',
+  },
+  {
+    text: 'כשרוצים לדעת מה השעה מסתכלים על ה______',
+    answers: ['שעון', 'טלפון', 'פלאפון', 'סלולרי', 'שעון קיר'],
+    displayAnswer: 'שעון',
+  },
+  {
+    text: 'הכלב נובח והחתול ______',
+    answers: ['מיילל', 'מילל', 'מיאו', 'מגרגר'],
+    displayAnswer: 'מיילל',
+  },
+  {
+    text: 'לפני שחוצים את הכביש מסתכלים ימינה ו______',
+    answers: ['שמאלה', 'שמאל'],
+    displayAnswer: 'שמאלה',
+  },
+  {
+    text: 'דגים שוחים ונושמים בתוך ה______',
+    answers: ['מים', 'ים', 'המים', 'הים', 'אקווריום', 'בריכה'],
+    displayAnswer: 'מים',
+  },
+  {
+    text: 'ציפורים עפות בשמיים בעזרת ה______ שלהן',
+    answers: ['כנפיים', 'כנפים'],
+    displayAnswer: 'כנפיים',
+  },
+  {
+    text: 'בשביל לחתוך ירקות או לחם משתמשים ב______',
+    answers: ['סכין', 'הסכין'],
+    displayAnswer: 'סכין',
+  },
+  {
+    text: 'כשנכנסים לחדר חשוך מדליקים את ה______',
+    answers: ['אור', 'האור', 'מנורה', 'חשמל'],
+    displayAnswer: 'אור',
+  },
+  {
+    text: 'נועלים נעליים וגורבים ______ על הרגליים',
+    answers: ['גרביים', 'גרבים'],
+    displayAnswer: 'גרביים',
+  },
+  {
+    text: 'ביום חם מאוד בקיץ הולכים לשחות ב______',
+    answers: ['ים', 'בריכה', 'הים', 'הבריכה', 'מים'],
+    displayAnswer: 'ים',
+  },
+  {
+    text: 'בשביל לכתוב או לצייר על דף משתמשים ב______',
+    answers: ['עיפרון', 'עפרון', 'עט', 'טוש', 'טושים', 'צבע'],
+    displayAnswer: 'עיפרון',
+  },
+  {
+    text: 'השמש זורחת ביום והירח מאיר ב______',
+    answers: ['לילה', 'הלילה'],
+    displayAnswer: 'לילה',
+  },
+  {
+    text: 'בסוף היום כשאנחנו עייפים הולכים לישון ב______',
+    answers: ['מיטה', 'המיטה'],
+    displayAnswer: 'מיטה',
+  },
+  {
+    text: 'שותים כוס מים קרים כשאנחנו מרגישים ______',
+    answers: ['צמאים', 'צמא', 'צמא גדול', 'צמאון'],
+    displayAnswer: 'צמאים',
+  },
+  {
+    text: 'במסיבת יום הולדת שרים שירים ואוכלים ______',
+    answers: ['עוגה', 'העוגה', 'עוגת יום הולדת', 'ממתקים'],
+    displayAnswer: 'עוגה',
+  },
+  {
+    text: 'אחרי הגשם לפעמים מופיעה בשמיים ______ צבעונית',
+    answers: ['קשת', 'הקשת', 'קשת בענן'],
+    displayAnswer: 'קשת',
+  },
+  {
+    text: 'כששומעים בדיחה מצחיקה פורצים ב______',
+    answers: ['צחוק', 'הצחוק'],
+    displayAnswer: 'צחוק',
+  },
+  {
+    text: 'פרפר צבעוני יוצא מתוך ה______',
+    answers: ['גולם', 'הגולם'],
+    displayAnswer: 'גולם',
+  },
+  {
+    text: 'לובשים חולצה ומכנסיים וחובשים ______ על הראש',
+    answers: ['כובע', 'הכובע'],
+    displayAnswer: 'כובע',
+  },
+  {
+    text: 'עץ שותה מים מן האדמה בעזרת ה______ שלו',
+    answers: ['שורשים', 'שורשיו', 'השורשים', 'שורש'],
+    displayAnswer: 'שורשים',
+  },
+  {
+    text: 'בשבת נחים ולא הולכים ל______',
+    answers: ['בית ספר', 'בית הספר', 'עבודה', 'העבודה', 'ביהס', 'גן'],
+    displayAnswer: 'בית ספר',
+  },
+  {
+    text: 'רופא מטפל באנשים חולים בבית ה______',
+    answers: ['חולים', 'החולים'],
+    displayAnswer: 'חולים',
+  },
+  {
+    text: 'כשרוצים לנסוע ברכבת מגיעים ל______ הרכבת',
+    answers: ['תחנת', 'תחנה'],
+    displayAnswer: 'תחנת',
+  },
+  {
+    text: 'אוכלים מרק חם בעזרת ה______',
+    answers: ['כף', 'כפית', 'הכף'],
+    displayAnswer: 'כף',
+  },
+  {
+    text: 'האריה הוא מלך ה______',
+    answers: ['חיות', 'החיות', 'יער', 'גונגל'],
+    displayAnswer: 'חיות',
+  },
+  {
+    text: 'לפני האוכל רוחצים ידיים עם מים ו______',
+    answers: ['סבון', 'הסבון'],
+    displayAnswer: 'סבון',
+  },
+  {
+    text: 'את המרק החם מוזגים לתוך ה______',
+    answers: ['צלחת', 'קערה', 'הקערה', 'סיר'],
+    displayAnswer: 'קערה',
+  },
+];
+
+const STORAGE_SUBJECT = 'dadOri.subject';
+const STORAGE_MATH_DIFF = 'dadOri.mathDifficulty';
+const STORAGE_LANG_DIFF = 'dadOri.languageDifficulty';
+
+function getSubject() {
+  const s = localStorage.getItem(STORAGE_SUBJECT);
+  return s === 'language' ? 'language' : 'math';
 }
 
-// Build a question for the given difficulty: { text, answer }.
-function generateQuestion(difficultyKey) {
-  if (difficultyKey === 'easy') {
+function setSubject(subject) {
+  localStorage.setItem(STORAGE_SUBJECT, subject);
+}
+
+function getDifficulty(subject = getSubject()) {
+  if (subject === 'language') {
+    const key = localStorage.getItem(STORAGE_LANG_DIFF);
+    return key === 'easy' ? 'easy' : 'easy';
+  }
+  const key = localStorage.getItem(STORAGE_MATH_DIFF) || localStorage.getItem('dadOri.difficulty');
+  return MATH_DIFFICULTIES.find((d) => d.key === key) ? key : 'normal';
+}
+
+function setDifficulty(subject, key) {
+  if (subject === 'language') {
+    localStorage.setItem(STORAGE_LANG_DIFF, key);
+  } else {
+    localStorage.setItem(STORAGE_MATH_DIFF, key);
+    localStorage.setItem('dadOri.difficulty', key);
+  }
+}
+
+// Normalize Hebrew strings for forgiving keyboard entry
+function normalizeHebrew(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\u0591-\u05C7]/g, '') // strip niqqud
+    .replace(/["'״׳`]/g, '')        // strip quotes
+    .replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '') // strip punctuation
+    .replace(/\s+/g, ' ')           // normalize spaces
+    .trim()
+    .toLowerCase();
+}
+
+let lastLanguageQuestionText = '';
+
+// Build a question for the active category & difficulty:
+function generateQuestion() {
+  const subject = getSubject();
+  const diff = getDifficulty(subject);
+
+  if (subject === 'language') {
+    const pool = EASY_LANGUAGE_QUESTIONS.filter((q) => q.text !== lastLanguageQuestionText);
+    const chosen = pool.length > 0
+      ? pool[Phaser.Math.Between(0, pool.length - 1)]
+      : EASY_LANGUAGE_QUESTIONS[Phaser.Math.Between(0, EASY_LANGUAGE_QUESTIONS.length - 1)];
+    lastLanguageQuestionText = chosen.text;
+
+    return {
+      type: 'language',
+      text: chosen.text,
+      answers: chosen.answers,
+      displayAnswer: chosen.displayAnswer,
+    };
+  }
+
+  // Math questions
+  if (diff === 'easy') {
     const a = Phaser.Math.Between(1, 9);
     const b = Phaser.Math.Between(1, 9);
-    return { text: `כמה זה ${a} ועוד ${b}?`, answer: a + b };
+    const ans = a + b;
+    return {
+      type: 'math',
+      text: `כמה זה ${a} ועוד ${b}?`,
+      answers: [String(ans)],
+      displayAnswer: String(ans),
+    };
   }
-  if (difficultyKey === 'hard') {
+  if (diff === 'hard') {
     const a = Phaser.Math.Between(1000, 9999);
     const b = Phaser.Math.Between(1000, 9999);
-    return { text: `כמה זה ${a} ועוד ${b}?`, answer: a + b };
+    const ans = a + b;
+    return {
+      type: 'math',
+      text: `כמה זה ${a} ועוד ${b}?`,
+      answers: [String(ans)],
+      displayAnswer: String(ans),
+    };
   }
+
   // normal — multiplication of small numbers
   const a = Phaser.Math.Between(2, 9);
   const b = Phaser.Math.Between(2, 9);
-  return { text: `כמה זה ${a} כפול ${b}?`, answer: a * b };
+  const ans = a * b;
+  return {
+    type: 'math',
+    text: `כמה זה ${a} כפול ${b}?`,
+    answers: [String(ans)],
+    displayAnswer: String(ans),
+  };
 }
 
 // Loads all character images once before any scene that draws them.
@@ -334,7 +574,7 @@ class MenuScene extends Phaser.Scene {
       this.scene.start('CharacterTypeScene')
     );
     this.makeButton(GAME_WIDTH / 2, 380, 'רמת קושי', 0x1a1a2e, 0x0d0d18, () =>
-      this.scene.start('DifficultyScene')
+      this.scene.start('SubjectMenuScene')
     );
 
     this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
@@ -590,58 +830,77 @@ class CharacterScene extends Phaser.Scene {
   }
 }
 
-// Quiz difficulty picker.
-class DifficultyScene extends Phaser.Scene {
+// Sub-menu for choosing subject: שאלות בשפה or שאלות בחשבון
+class SubjectMenuScene extends Phaser.Scene {
   constructor() {
-    super('DifficultyScene');
+    super('SubjectMenuScene');
   }
 
   create() {
     setControlsVisible(false);
-    const selected = getDifficulty();
+    const currentSubject = getSubject();
+    const mathDiff = getDifficulty('math');
+    const mathDiffLabel = MATH_DIFFICULTIES.find((d) => d.key === mathDiff)?.label || 'רגיל';
+    const langDiff = getDifficulty('language');
+    const langDiffLabel = LANGUAGE_DIFFICULTIES.find((d) => d.key === langDiff)?.label || 'קל';
 
-    this.add.text(GAME_WIDTH / 2, 60, 'רמת קושי של השאלות', {
+    this.add.text(GAME_WIDTH / 2, 60, 'בחר סוג שאלות', {
       fontSize: '34px',
       fontFamily: 'sans-serif',
       fontStyle: 'bold',
       color: '#1a1a2e',
+      align: 'center',
     }).setOrigin(0.5);
 
-    const startY = 140;
-    const rowH = 86;
+    const activeLabel = currentSubject === 'language'
+      ? `שאלות בשפה (${langDiffLabel})`
+      : `שאלות בחשבון (${mathDiffLabel})`;
 
-    DIFFICULTIES.forEach((d, i) => {
-      const y = startY + i * rowH;
-      const isSel = d.key === selected;
+    this.add.text(GAME_WIDTH / 2, 105, `נבחר כעת: ${activeLabel}`, {
+      fontSize: '20px',
+      fontFamily: 'sans-serif',
+      color: '#444444',
+    }).setOrigin(0.5);
 
-      const card = this.add.rectangle(GAME_WIDTH / 2, y, 460, 72, 0xffffff, 0.95)
-        .setStrokeStyle(4, isSel ? 0xff6b35 : 0xcccccc)
+    SUBJECTS.forEach((item, i) => {
+      const y = 190 + i * 115;
+      const isSelected = currentSubject === item.key;
+      const card = this.add.rectangle(GAME_WIDTH / 2, y, 480, 88, 0xffffff, 0.95)
+        .setStrokeStyle(4, isSelected ? 0xff6b35 : 0xcccccc)
         .setInteractive({ useHandCursor: true });
 
-      this.add.text(GAME_WIDTH / 2 - 200, y, d.label, {
-        fontSize: '28px',
+      const levelInfo = item.key === 'language' ? `רמה: ${langDiffLabel}` : `רמה: ${mathDiffLabel}`;
+
+      this.add.text(GAME_WIDTH / 2 + 210, y - 16, item.label, {
+        fontSize: '26px',
         fontFamily: 'sans-serif',
         fontStyle: 'bold',
         color: '#1a1a2e',
-      }).setOrigin(0, 0.5);
+      }).setOrigin(1, 0.5);
 
-      this.add.text(GAME_WIDTH / 2 + 200, y, `${d.example} = ?`, {
-        fontSize: '22px',
-        fontFamily: 'monospace',
+      this.add.text(GAME_WIDTH / 2 + 210, y + 18, `${item.description} (${levelInfo})`, {
+        fontSize: '17px',
+        fontFamily: 'sans-serif',
         color: '#666666',
       }).setOrigin(1, 0.5);
 
-      if (isSel) {
-        this.add.text(GAME_WIDTH / 2 - 120, y, '✓', {
-          fontSize: '26px',
+      if (isSelected) {
+        this.add.text(GAME_WIDTH / 2 - 190, y, '✓', {
+          fontSize: '32px',
           fontFamily: 'sans-serif',
           color: '#2d7a2d',
+        }).setOrigin(0.5);
+      } else {
+        this.add.text(GAME_WIDTH / 2 - 190, y, '‹', {
+          fontSize: '32px',
+          fontFamily: 'sans-serif',
+          color: '#888888',
         }).setOrigin(0.5);
       }
 
       card.on('pointerdown', () => {
-        setDifficulty(d.key);
-        this.scene.restart();
+        getAudioContext();
+        this.scene.start('DifficultyScene', { subject: item.key });
       });
     });
 
@@ -655,6 +914,107 @@ class DifficultyScene extends Phaser.Scene {
       color: '#ffffff',
     }).setOrigin(0.5);
     back.on('pointerdown', () => this.scene.start('MenuScene'));
+  }
+}
+
+// Quiz difficulty sub-menu for selected subject (math or language)
+class DifficultyScene extends Phaser.Scene {
+  constructor() {
+    super('DifficultyScene');
+  }
+
+  init(data) {
+    this.subject = data?.subject || getSubject();
+  }
+
+  create() {
+    setControlsVisible(false);
+    const subject = this.subject;
+    const isLang = subject === 'language';
+    const difficulties = isLang ? LANGUAGE_DIFFICULTIES : MATH_DIFFICULTIES;
+    const selected = getDifficulty(subject);
+    const isSubjectActive = getSubject() === subject;
+
+    const title = isLang ? 'רמת קושי - שאלות בשפה' : 'רמת קושי - שאלות בחשבון';
+
+    this.add.text(GAME_WIDTH / 2, 55, title, {
+      fontSize: '32px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#1a1a2e',
+    }).setOrigin(0.5);
+
+    if (isLang) {
+      this.add.text(GAME_WIDTH / 2, 95, 'רמות בינוני וקשה יתווספו בקרוב', {
+        fontSize: '17px',
+        fontFamily: 'sans-serif',
+        color: '#666666',
+      }).setOrigin(0.5);
+    }
+
+    const startY = isLang ? 160 : 140;
+    const rowH = 88;
+
+    difficulties.forEach((d, i) => {
+      const y = startY + i * rowH;
+      const isEnabled = d.enabled !== false;
+      const isSel = isEnabled && (d.key === selected) && isSubjectActive;
+
+      const card = this.add.rectangle(
+        GAME_WIDTH / 2,
+        y,
+        480,
+        74,
+        isEnabled ? 0xffffff : 0xe8e8e8,
+        isEnabled ? 0.95 : 0.65
+      ).setStrokeStyle(4, isSel ? 0xff6b35 : isEnabled ? 0xcccccc : 0xaaaaaa);
+
+      this.add.text(GAME_WIDTH / 2 - 210, y, d.label, {
+        fontSize: '28px',
+        fontFamily: 'sans-serif',
+        fontStyle: 'bold',
+        color: isEnabled ? '#1a1a2e' : '#888888',
+      }).setOrigin(0, 0.5);
+
+      const exampleText = isLang ? d.example : `${d.example} = ?`;
+      this.add.text(GAME_WIDTH / 2 + 210, y, exampleText, {
+        fontSize: isLang ? '19px' : '22px',
+        fontFamily: isLang ? 'sans-serif' : 'monospace',
+        color: isEnabled ? '#666666' : '#999999',
+      }).setOrigin(1, 0.5);
+
+      if (isSel) {
+        this.add.text(GAME_WIDTH / 2 - 120, y, '✓', {
+          fontSize: '26px',
+          fontFamily: 'sans-serif',
+          color: '#2d7a2d',
+        }).setOrigin(0.5);
+      } else if (!isEnabled) {
+        this.add.text(GAME_WIDTH / 2 - 120, y, '🔒', {
+          fontSize: '18px',
+        }).setOrigin(0.5);
+      }
+
+      if (isEnabled) {
+        card.setInteractive({ useHandCursor: true });
+        card.on('pointerdown', () => {
+          setSubject(subject);
+          setDifficulty(subject, d.key);
+          this.scene.restart({ subject });
+        });
+      }
+    });
+
+    const back = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT - 45, 200, 52, 0x1a1a2e)
+      .setStrokeStyle(4, 0x0d0d18)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(GAME_WIDTH / 2, GAME_HEIGHT - 45, 'חזרה', {
+      fontSize: '26px',
+      fontFamily: 'sans-serif',
+      fontStyle: 'bold',
+      color: '#ffffff',
+    }).setOrigin(0.5);
+    back.on('pointerdown', () => this.scene.start('SubjectMenuScene'));
   }
 }
 
@@ -731,32 +1091,53 @@ class GameScene extends Phaser.Scene {
     cityFront.generateTexture('city-front', 480, 190);
     cityFront.destroy();
 
-    // Traffic light texture: hanging signal head on a roadside pole.
-    const light = this.make.graphics({ x: 0, y: 0, add: false });
-    // pole and base
-    light.fillStyle(0x4b5563);
-    light.fillRect(23, 34, 6, 46);
-    light.fillStyle(0x374151);
-    light.fillRect(16, 78, 20, 6);
-    // signal housing
-    light.fillStyle(0x111827);
-    light.fillRoundedRect(10, 0, 42, 54, 8);
-    light.fillStyle(0x1f2937);
-    light.fillRoundedRect(14, 4, 34, 46, 6);
-    // signal lights
-    light.fillStyle(0xff2d2d);
-    light.fillCircle(31, 13, 8);
-    light.fillStyle(0xffd23f);
-    light.fillCircle(31, 27, 8);
-    light.fillStyle(0x32d96b);
-    light.fillCircle(31, 41, 8);
-    // glossy highlights
-    light.fillStyle(0xffffff, 0.45);
-    light.fillCircle(28, 10, 2);
-    light.fillCircle(28, 24, 2);
-    light.fillCircle(28, 38, 2);
-    light.generateTexture('traffic-light', 62, 84);
-    light.destroy();
+    // Dog poo emoji obstacle texture: auto-trimmed so the bottom pixel touches the ground exactly
+    if (!this.textures.exists('poo-obstacle')) {
+      const temp = document.createElement('canvas');
+      temp.width = 100;
+      temp.height = 100;
+      const tCtx = temp.getContext('2d');
+      tCtx.font = '54px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif';
+      tCtx.textAlign = 'center';
+      tCtx.textBaseline = 'middle';
+      tCtx.fillText('💩', 50, 50);
+
+      const imgData = tCtx.getImageData(0, 0, 100, 100);
+      const data = imgData.data;
+      let minX = 100;
+      let minY = 100;
+      let maxX = 0;
+      let maxY = 0;
+      for (let y = 0; y < 100; y++) {
+        for (let x = 0; x < 100; x++) {
+          const alpha = data[(y * 100 + x) * 4 + 3];
+          if (alpha > 15) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (maxX <= minX || maxY <= minY) {
+        minX = 22;
+        maxX = 78;
+        minY = 24;
+        maxY = 80;
+      }
+
+      const cropW = maxX - minX + 1;
+      const cropH = maxY - minY + 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = cropW;
+      canvas.height = cropH;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(temp, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+      this.textures.addCanvas('poo-obstacle', canvas);
+      this.textures.addCanvas('traffic-light', canvas);
+    }
   }
 
   create() {
@@ -935,35 +1316,63 @@ class GameScene extends Phaser.Scene {
     this.hitObstacle = obstacle;
     this.physics.pause();
 
-    // Question depends on the chosen difficulty level.
-    const question = generateQuestion(getDifficulty());
-    this.quizCorrectAnswer = question.answer;
+    // Question depends on chosen subject & difficulty
+    const question = generateQuestion();
+    this.currentQuizQuestion = question;
 
     this.quizQuestion.textContent = question.text;
     this.quizFeedback.textContent = '';
     this.quizAnswer.value = '';
+
+    if (question.type === 'language') {
+      this.quizAnswer.type = 'text';
+      this.quizAnswer.inputMode = 'text';
+      this.quizAnswer.placeholder = 'הקלד תשובה...';
+    } else {
+      this.quizAnswer.type = 'text';
+      this.quizAnswer.inputMode = 'numeric';
+      this.quizAnswer.placeholder = 'מספר';
+    }
+
     this.quizModal.classList.add('show');
     // Focus after the modal is visible so mobile keyboards open.
     window.setTimeout(() => this.quizAnswer.focus(), 50);
   }
 
   checkQuizAnswer() {
-    if (!this.quizActive) return;
-    const value = parseInt(this.quizAnswer.value, 10);
-    if (Number.isNaN(value)) {
-      this.quizFeedback.textContent = 'כתבו מספר';
+    if (!this.quizActive || !this.currentQuizQuestion) return;
+    const question = this.currentQuizQuestion;
+    const raw = this.quizAnswer.value.trim();
+
+    if (!raw) {
+      this.quizFeedback.textContent = question.type === 'language' ? 'כתבו מילה' : 'כתבו מספר';
       this.quizFeedback.style.color = '#c44a1a';
       return;
     }
 
-    if (value === this.quizCorrectAnswer) {
+    let isCorrect = false;
+
+    if (question.type === 'language') {
+      const userNorm = normalizeHebrew(raw);
+      isCorrect = question.answers.some((ans) => normalizeHebrew(ans) === userNorm);
+    } else {
+      const value = parseInt(raw, 10);
+      if (Number.isNaN(value)) {
+        this.quizFeedback.textContent = 'כתבו מספר';
+        this.quizFeedback.style.color = '#c44a1a';
+        return;
+      }
+      isCorrect = question.answers.some((ans) => parseInt(ans, 10) === value);
+    }
+
+    if (isCorrect) {
       this.quizFeedback.textContent = 'כל הכבוד! 🎉';
       this.quizFeedback.style.color = '#2d7a2d';
       window.setTimeout(() => this.resolveQuiz(true), 700);
     } else {
-      this.quizFeedback.textContent = `אופס! התשובה היא ${this.quizCorrectAnswer}`;
+      this.quizFeedback.textContent = `אופס! התשובה היא ${question.displayAnswer}`;
       this.quizFeedback.style.color = '#cc2222';
-      window.setTimeout(() => this.resolveQuiz(false), 1400);
+      window.setTimeout(() => this.resolveQuiz(false), 1500);
     }
   }
 
@@ -986,15 +1395,24 @@ class GameScene extends Phaser.Scene {
   }
 
   spawnObstacle() {
-    const trafficLightH = 84;
+    const texture = this.textures.get('poo-obstacle');
+    const source = texture ? texture.getSourceImage() : null;
+    const obstacleW = source && source.width ? source.width : 50;
+    const obstacleH = source && source.height ? source.height : 50;
+
+    // Position with bottom edge resting directly on the ground line
     const obs = this.obstacles.create(
       GAME_WIDTH + 50,
-      GROUND_TOP - trafficLightH / 2,
-      'traffic-light'
+      GROUND_TOP - obstacleH / 2 + 2,
+      'poo-obstacle'
     );
     obs.body.setAllowGravity(false);
     obs.body.setImmovable(true);
     obs.body.setVelocityX(-SCROLL_SPEED);
+    const hitW = Math.round(obstacleW * 0.72);
+    const hitH = Math.round(obstacleH * 0.78);
+    obs.body.setSize(hitW, hitH);
+    obs.body.setOffset((obstacleW - hitW) / 2, obstacleH - hitH);
     this.nextObstacleX += Phaser.Math.Between(OBSTACLE_MIN_GAP, OBSTACLE_MAX_GAP);
   }
 
@@ -1101,7 +1519,15 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_HORIZONTALLY,
   },
-  scene: [PreloadScene, MenuScene, CharacterTypeScene, CharacterScene, DifficultyScene, GameScene],
+  scene: [
+    PreloadScene,
+    MenuScene,
+    CharacterTypeScene,
+    CharacterScene,
+    SubjectMenuScene,
+    DifficultyScene,
+    GameScene,
+  ],
 };
 
 new Phaser.Game(config);
